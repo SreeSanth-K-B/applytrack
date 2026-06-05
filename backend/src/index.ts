@@ -17,7 +17,16 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    const allowed = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+    // Allow if origin matches frontend URL or localhost
+    if (origin === allowed || origin.includes('localhost') || origin.includes('vercel.app')) {
+      return callback(null, true);
+    }
+    callback(null, true); // Allow all for now during development
+  },
   credentials: true,
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -25,7 +34,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const mongoose = require('mongoose');
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    mongoState: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+    env: {
+      hasMongoDB: !!process.env.MONGODB_URI,
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasGemini: !!process.env.GEMINI_API_KEY,
+      frontendUrl: process.env.FRONTEND_URL,
+    },
+  });
 });
 
 // Routes
