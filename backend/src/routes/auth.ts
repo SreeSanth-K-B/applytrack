@@ -36,9 +36,9 @@ router.post(
         refreshToken,
         user: { id: user._id, name: user.name, email: user.email, gmailConnected: user.gmailConnected },
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
-      res.status(500).json({ message: 'Internal server error' });
+      res.status(500).json({ message: 'Internal server error', error: error.message, stack: error.stack });
     }
   }
 );
